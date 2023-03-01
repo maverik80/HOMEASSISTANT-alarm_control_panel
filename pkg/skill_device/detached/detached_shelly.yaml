@@ -3,8 +3,7 @@
   # shelly 1 switch / light
   # shelly 1 PM switch / light
   # shelly Shelly RGBW color/white
-
-# configurato ma non testato
+  
   # shelly2 cover / light / switch  
   # Shelly UNI 
   # shelly4prp 
@@ -22,9 +21,6 @@
   # Shelly Pro 2 
   # Shelly Pro 4 PM 
 
-# aggiungere o controllare 
-# Shelly RGBW
- 
 rest_command:
   detached_shelly:
     url: "{{ urls|default(none) }}"
