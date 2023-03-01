@@ -1,0 +1,106 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+        Allarme: &alarm alarm_control_panel.home_alarm
+        Gruppo famiglia: &famiglia  group.famiglia
+        
+#ATTIVA ALLARME GLOBALE E DISATTIVA  IN BASE ALLA PRESENZA IN CASA. 
+# SE ALLARME INSERITO AVVISA CHE SE LA BATTERIA E' INFERIORE AL input_number.alarm_battery_mobile
+
+input_number:
+  alarm_battery_mobile:
+      name: Batteria scarica telefono
+      min: 1
+      max: 100
+      unit_of_measurement: "%"
+      mode: box
+      icon: mdi:battery
+
+input_boolean:
+  alarm_battery_mobile:
+    name: Avviso telefono scarico
+  presence_person_active_alarm:
+    name: Attiva-Disattiva per presenza in casa
+
+template:
+  - sensor:
+      - name: Allerta batteria mobile per allarme
+        state: >
+          {% set output = namespace(numbers=[]) %}
+          {% set exclude = expand('group.exclude_alarm_entities')|map(attribute='entity_id')|list %}
+          {% set include = expand('group.include_alarm_entities')|map(attribute='entity_id')|list %}
+          {% set filter = states.sensor|selectattr('entity_id','in',include)|selectattr('attributes.device_class','defined')|selectattr('attributes.device_class','eq','battery') %}
+          {% if filter is defined %}
+            {%- for battery in filter if  battery.entity_id in integration_entities('mobile_app') and battery.state|int < states('input_number.alarm_battery_mobile')|int -%}
+              {%- set output.numbers = output.numbers + [battery] -%} 
+          {% else %}
+            {% set filter = states.sensor|rejectattr('entity_id','in',exclude)|selectattr('attributes.device_class','defined')|selectattr('attributes.device_class','eq','battery') %}
+              {%- for battery in filter if  battery.entity_id in integration_entities('mobile_app') and battery.state|int < states('input_number.alarm_battery_mobile')|int -%}
+                {%- set output.numbers = output.numbers + [battery] -%}
+              {% endfor%}
+            {% endfor%}
+          {% endif %}
+            {{output.numbers|count}}
+
+automation:
+- alias: Presence person active alarm
+  id: presencepersonactivealarm
+  initial_state: true
+  variables:
+    alarm: *alarm 
+  trigger:
+  - platform: state
+    entity_id: sensor.allerta_batteria_mobile_per_allarme
+    id: battery
+    not_to:
+        - "0"
+  - platform: state
+    entity_id: *famiglia
+  action:
+  - choose:
+
+    - alias: Inserisci allarme globale per famiglia fuori casa
+      conditions:
+      - "{{trigger.to_state.state == 'not_home' and is_state(alarm,'disarmed')}}"
+      - "{{is_state('input_boolean.presence_person_active_alarm','on')}}"
+      sequence:
+      - service: alarm_control_panel.alarm_arm_away
+        target:
+          entity_id: *alarm
+    - alias: Togli allarme globale per famiglia tornata a casa
+      conditions:
+      - "{{trigger.to_state.state == 'home' and not is_state(alarm,'disarmed')}}"
+      - "{{is_state('input_boolean.presence_person_active_alarm','on')}}"
+      sequence:
+      - service: alarm_control_panel.alarm_disarm
+        data:
+          code: !secret alarm_code
+        target:
+          entity_id: *alarm
+    - alias: Avvisa cellulari con batteria scarica con allarme globale inserito
+      conditions:
+      - "{{trigger.id == 'battery' and is_state(alarm,'armed_away') and  trigger.to_state.state is defined and trigger.from_state.state is defined }}"
+      - "{{is_state('input_boolean.alarm_battery_mobile','on')}}"
+      sequence:
+        - service: script.notify_allert
+          data: 
+            google_on: 'false'
+            alexa_on: 'false'
+            notification_icon: mdi:alarm-light-outline
+            title: --ALLARME--
+            message: >
+              {% set output = namespace(numbers=[]) %}
+              {% set exclude = expand('group.exclude_alarm_entities')|map(attribute='entity_id')|list %}
+              {% set include = expand('group.include_alarm_entities')|map(attribute='entity_id')|list %}
+              {% set filter = states.sensor|selectattr('entity_id','in',include)|selectattr('attributes.device_class','defined')|selectattr('attributes.device_class','eq','battery') %}
+              {% if filter is defined %}
+                {%- for battery in filter if  battery.entity_id in integration_entities('mobile_app') and battery.state|int < states('input_number.alarm_battery_mobile')|int -%}
+                  {%- set output.numbers = output.numbers + [battery.name +(' ')+ battery.state+('%') ] -%}
+              {% else %}
+                {% set filter = states.sensor|rejectattr('entity_id','in',exclude)|selectattr('attributes.device_class','defined')|selectattr('attributes.device_class','eq','battery') %}
+                  {%- for battery in filter if  battery.entity_id in integration_entities('mobile_app') and battery.state|int < states('input_number.alarm_battery_mobile')|int -%}
+                    {%- set output.numbers = output.numbers + [battery.name +(' ')+ battery.state+('%') ] -%}
+                  {% endfor%}
+                {% endfor%}
+              {% endif %}
+                {{('Attenzione allarme inserito con: ') + output.numbers|join(', ')}}

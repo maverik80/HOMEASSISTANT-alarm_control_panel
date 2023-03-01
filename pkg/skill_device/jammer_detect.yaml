@@ -1,0 +1,197 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+        Allarme: &alarm alarm_control_panel.home_alarm
+
+input_number:
+  jammer_detect_high_availability_vote:
+    name: Jammer Detect HA vote soglia
+    icon: mdi:wifi-strength-1-alert
+    mode: box
+    min: 0
+    max: 5
+    step: 1
+    unit_of_measurement: "Voti"
+  jammer_detect_difference_db_limit:
+    name: Jammer Detect differenza db 
+    mode: box
+    icon: mdi:wifi-arrow-up-down
+    min: 0
+    max: 10
+    step: 1
+    unit_of_measurement: "db"
+
+group:
+  jammer_detect_device:
+    name: Dispositvi
+
+input_select:
+  device_db:
+    name: Integrazione per controllo db
+    options:
+      - Tutte
+      - Shelly
+      - EspHome
+
+template:
+  - sensor:
+      - name: Jammer detect count entities
+        state: "{{expand('group.jammer_detect_device')|count}}"
+        unit_of_measurement: "Voti"
+        attributes:
+          instant_average_db_global: >  
+            {% set sum_state = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='state')|map('float')|sum %}
+            {% set sum_entity = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|list|count %}
+              {{ (sum_state/sum_entity)|round(2) if sum_state != 0 and sum_entity != 0 else 0 }}
+          instant_average_db_esphome: >
+            {% set device = namespace(entities=[]) %}
+            {% set entities_group = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='entity_id')|list%}
+              {%- for wifi in states if wifi.entity_id in integration_entities('esphome') and wifi.entity_id in entities_group-%}
+              {%- set device.entities = device.entities + [wifi.state|float(0)] -%}
+                {%- if loop.last -%}
+                {%- endif -%}
+              {%endfor%}
+            {{(device.entities|sum/device.entities|count)|round(2) if device.entities|sum !=0 and device.entities|count !=0 else 0 }}
+          instant_average_db_shelly: >
+            {% set device = namespace(entities=[]) %}
+            {% set entities_group = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='entity_id')|list%}
+              {%- for wifi in states if wifi.entity_id in integration_entities('shelly') and wifi.entity_id in entities_group-%}
+              {%- set device.entities = device.entities + [wifi.state|float(0)] -%}
+                {%- if loop.last -%}
+                {%- endif -%}
+              {%endfor%}
+            {{(device.entities|sum/device.entities|count)|round(2) if device.entities|sum !=0 and device.entities|count !=0 else 0 }}
+          offline: "{{expand('group.jammer_detect_device')| selectattr('state', 'in', ['unknown','unavailable'])|list|count}}"
+  - trigger:
+      - platform: state
+        entity_id: sensor.jammer_detect_count_entities
+        for: "00:00:02"  #ritardo per evitare errore creazione gruppo al riavvio ed al reload
+        to: null
+      - platform: state
+        entity_id: sensor.jammer_detect_count_entities
+        attribute: offline
+        to: null
+        for: "00:00:02" #ritardo per evitare errore creazione gruppo al riavvio ed al reload
+    sensor:
+      - name: "Print list entities"
+        state:  "{{expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='entity_id')|list}}"
+        attributes:
+          print_average_db_global: >
+            {% set sum_state = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='state')|map('float')|sum %}
+            {% set sum_entity = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|list|count %}
+              {{ (sum_state/sum_entity)|round(2) if sum_state != 0 and sum_entity != 0 else 0 }}
+          print_average_db_esphome: >
+            {% set device = namespace(entities=[]) %}
+            {% set entities_group = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='entity_id')|list%}
+              {%- for wifi in states if wifi.entity_id in integration_entities('esphome') and wifi.entity_id in entities_group-%}
+              {%- set device.entities = device.entities + [wifi.state|float(0)] -%}
+                {%- if loop.last -%}
+                {%- endif -%}
+              {%endfor%}
+            {{(device.entities|sum/device.entities|count)|round(2) if device.entities|sum !=0 and device.entities|count !=0 else 0 }}
+          print_average_db_shelly: >
+            {% set device = namespace(entities=[]) %}
+            {% set entities_group = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='entity_id')|list%}
+              {%- for wifi in states if wifi.entity_id in integration_entities('shelly') and wifi.entity_id in entities_group-%}
+              {%- set device.entities = device.entities + [wifi.state|float(0)] -%}
+                {%- if loop.last -%}
+                {%- endif -%}
+              {%endfor%}
+            {{(device.entities|sum/device.entities|count)|round(2) if device.entities|sum !=0 and device.entities|count !=0 else 0 }}
+  - select:
+      - name: "Jammer detect entities"
+        state: "Disabilitato"
+        options: >
+          {% set exclude = expand('group.exclude_alarm_entities')|map(attribute='entity_id')|list %}
+          {% set output = namespace(numbers=[]) %}
+          {% set domain = states.sensor|rejectattr('entity_id','in',exclude)  |selectattr('attributes.device_class', 'defined') | selectattr('attributes.device_class', 'eq', 'signal_strength')%}
+          {% for states in domain  if states.state != 'unavailable' and states.state != 'unknown' -%}
+            {%- set output.numbers = output.numbers + [states.name ] -%}
+              {%- if loop.last -%}
+              {%- endif -%}
+          {%- endfor %}
+            {{output.numbers}}
+        select_option:
+        - service: group.set
+          data_template:
+            object_id: jammer_detect_device
+            entities: >-
+                {%- set domain = ['sensor']-%}
+                {%- for device in states|selectattr('attributes.device_class', 'defined') | selectattr('attributes.device_class', 'eq', 'signal_strength') if device.domain in domain -%}
+                  {%- if device.name|lower == option |lower -%}
+                    {% if device.entity_id in state_attr('group.jammer_detect_device','entity_id')%}
+                      {{state_attr('group.jammer_detect_device','entity_id')|list|select('ne',device.entity_id)|list }}
+                    {%else%}
+                      {% set ns = namespace(entities=state_attr('group.jammer_detect_device','entity_id')|list|select('ne', device.entity_id )|list)%}
+                        {{ ns.entities + [device.entity_id] }}
+                    {%- endif -%}
+                  {%- endif -%}
+                {%- endfor -%}
+
+automation:
+  - alias: Jammer Detect Controllo db Notifica
+    id: jammer_detect_controllo_db_notifica
+    trigger:
+    - platform: template
+      value_template: "{{is_state('input_select.device_db','Tutte') and (state_attr('sensor.jammer_detect_count_entities','instant_average_db_global')|int(0)<(state_attr('sensor.print_list_entities','print_average_db_global')|int(0)-states('input_number.jammer_detect_difference_db_limit')|int(0)))}}"
+      for: '00:00:03'  #ritardo per valorizzare correttamento sensor.jammer_detect_count_entities
+    - platform: template
+      value_template: "{{is_state('input_select.device_db','EspHome') and (state_attr('sensor.jammer_detect_count_entities','instant_average_db_esphome')|int(0)<(state_attr('sensor.print_list_entities','print_average_db_esphome')|int(0)-states('input_number.jammer_detect_difference_db_limit')|int(0)))}}"
+      for: '00:00:03'
+    - platform: template
+      value_template: "{{is_state('input_select.device_db','Shelly') and (state_attr('sensor.jammer_detect_count_entities','instant_average_db_shelly')|int(0)<(state_attr('sensor.print_list_entities','print_average_db_shelly')|int(0)-states('input_number.jammer_detect_difference_db_limit')|int(0)))}}"
+      for: '00:00:03'
+    condition:
+    - condition: state
+      entity_id: *alarm
+      state: armed_away
+    action:   
+    - service: script.notify_allert
+      data: 
+        google_on: 'false'
+        alexa_on: 'false'
+        notification_icon: mdi:alarm-light-outline
+        title: --ALLARME--
+        message: >
+          {%-if is_state('input_select.device_db','Tutte')-%}
+            {{('Possibile jammer per variazione db, Riferimeto:') + state_attr('sensor.print_list_entities','print_average_db_global')|string + ('db')+(' attuale:') +state_attr('sensor.jammer_detect_count_entities','instant_average_db_global')|string+ ('db')+(' Differenza:') +((state_attr('sensor.print_list_entities','print_average_db_global')|float(0) - state_attr('sensor.jammer_detect_count_entities','instant_average_db_global')|float(0))|round(2))|string+ ('db')}}
+          {%elif is_state('input_select.device_db','Shelly')%}
+            {{('Possibile jammer per variazione db, Riferimeto:') + state_attr('sensor.print_list_entities','print_average_db_shelly')|string + ('db')+(' attuale:') +state_attr('sensor.jammer_detect_count_entities','instant_average_db_shelly')|string+ ('db')+(' Differenza:') +((state_attr('sensor.print_list_entities','print_average_db_shelly')|float(0) - state_attr('sensor.jammer_detect_count_entities','instant_average_db_shelly')|float(0))|round(2))|string+ ('db')}}
+          {%elif is_state('input_select.device_db','EspHome')%}
+            {{('Possibile jammer per variazione db, Riferimeto:') + state_attr('sensor.print_list_entities','print_average_db_esphome')|string + ('db')+(' attuale:') +state_attr('sensor.jammer_detect_count_entities','instant_average_db_esphome')|string+ ('db')+(' Differenza:') +((state_attr('sensor.print_list_entities','print_average_db_esphome')|float(0) - state_attr('sensor.jammer_detect_count_entities','instant_average_db_esphome')|float(0))|round(2))|string+ ('db')}}
+          {%endif%}
+  - alias: Jammer Detect notifica
+    id: cb5687088f82426289e16ed344945eea
+    trigger:
+      - platform: template
+        value_template: "{{ state_attr('sensor.jammer_detect_trigger_entities','offline') |int(0) >= states('input_number.jammer_detect_high_availability_vote') |int(0) }}"
+    condition:
+    - condition: state
+      entity_id: *alarm
+      state: armed_away
+    action:
+    - service: script.notify_allert
+      data: 
+        google_on: 'false'
+        alexa_on: 'false'
+        notification_icon: mdi:alarm-light-outline
+        title: --ALLARME--
+        message: >
+          {{('Possibile impiego di jammer per dispositivi offline: ') + expand('group.jammer_detect_device')|selectattr('state', 'in', ['unknown','unavailable'])|map(attribute='name')|list|join(', ')}}
+  - alias: Jammer Detect Crea lista
+    id: d33ae6b9d08ed3d236a334c96b41a5b9
+    initial_state: true
+    trigger:
+      - platform: event
+        event_type: call_service
+        event_data:
+          domain: group
+          service: reload
+      - platform: homeassistant
+        event: start
+    action:
+      - delay: '00:00:01'
+      - service: group.set
+        data:
+          object_id: jammer_detect_device
+          entities: "{{states('sensor.print_list_entities')}}"

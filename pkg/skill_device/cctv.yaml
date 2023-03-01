@@ -1,0 +1,175 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+        Allarme: &alarm alarm_control_panel.home_alarm
+        Video Camera 1: &camera1 camera.camcorridoio 
+        Video Camera 2: &camera2 camera.camsala
+        Video Camera 3: &camera3 camera.timcam_ezviz
+        Service mobile Android: &mobile1 notify.mobile_app_cellulare_marco
+        Service mobile Android 2: &mobile2 notify.mobile_app_samsung_s21
+
+# Invio snapshot (android) con action per vedere telecamere live o registrazione di 30sec 
+# occorre aggiornare il proprio percorso per action: "URI"
+
+automation:
+- alias: CCTV 1 per allarme
+  id: *camera1
+  variables:
+    camera: *camera1
+  trigger:
+  - entity_id: *alarm
+    platform: state
+    to: triggered
+  action:
+    - alias: snapshot camera
+      service: camera.snapshot
+      target:
+        entity_id: "{{camera}}"
+      data:
+        filename: "/config/www/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.jpg"
+    - parallel:
+      - service: *mobile1
+        data:
+          message: '{{ states[camera].name }}'
+          title: '---CCTV---'
+          data:
+            notification_icon: "mdi:cctv"
+            color: "red"
+            image: "/local/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.jpg"
+            actions:
+              - action: "URI"
+                title: "Apri live"
+                uri: "/schede-nascoste/cctv"
+              - action: "URI"
+                title: "Apri Registrazione"
+                uri: "/media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocale%2Fimmagini_allarme"
+      - service: *mobile2
+        data:
+          message: '{{ states[camera].name }}'
+          title: '---CCTV---'
+          data:
+            notification_icon: "mdi:cctv"
+            color: "red"
+            image: "/local/immagini_allarme/{{states[camera].object_id}}.jpg"
+            actions:
+              - action: "URI"
+                title: "Apri live"
+                uri: "/schede-nascoste/cctv"
+              - action: "URI"
+                title: "Apri Registrazione"
+                uri: "/media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocale%2Fimmagini_allarme"
+      - alias: Avvia registrazione camera
+        service: camera.record
+        data:
+          filename: "/config/www/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.mp4"
+          duration: 30
+        target:
+          entity_id: "{{camera}}"
+
+- alias: CCTV 2 per allarme
+  id: *camera2
+  variables:
+    camera: *camera2
+  trigger:
+  - entity_id: *alarm
+    platform: state
+    to: triggered
+  action:
+    - alias: snapshot camera
+      service: camera.snapshot
+      target:
+        entity_id: "{{camera}}"
+      data:
+        filename: "/config/www/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.jpg"
+    - parallel:
+      - service: *mobile1
+        data:
+          message: '{{ states[camera].name }}'
+          title: '---CCTV---'
+          data:
+            notification_icon: "mdi:cctv"
+            color: "red"
+            image: "/local/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.jpg"
+            actions:
+              - action: "URI"
+                title: "Apri live"
+                uri: "/schede-nascoste/cctv"
+              - action: "URI"
+                title: "Apri Registrazione"
+                uri: "/media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocale%2Fimmagini_allarme"
+      - service: *mobile2
+        data:
+          message: '{{ states[camera].name }}'
+          title: '---CCTV---'
+          data:
+            notification_icon: "mdi:cctv"
+            color: "red"
+            image: "/local/immagini_allarme/{{states[camera].object_id}}.jpg"
+            actions:
+              - action: "URI"
+                title: "Apri live"
+                uri: "/schede-nascoste/cctv"
+              - action: "URI"
+                title: "Apri Registrazione"
+                uri: "/media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocale%2Fimmagini_allarme"
+      - alias: Avvia registrazione camera
+        service: camera.record
+        data:
+          filename: "/config/www/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.mp4"
+          duration: 30
+        target:
+          entity_id: "{{camera}}"
+
+- alias: CCTV 3 per allarme
+  id: *camera3
+  variables:
+    camera: *camera3
+  trigger:
+  - entity_id: *alarm
+    platform: state
+    to: triggered
+  action:
+    - alias: snapshot camera
+      service: camera.snapshot
+      target:
+        entity_id: "{{camera}}"
+      data:
+        filename: "/config/www/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.jpg"
+    - parallel:
+      - service: *mobile1
+        data:
+          message: '{{ states[camera].name }}'
+          title: '---CCTV---'
+          data:
+            notification_icon: "mdi:cctv"
+            color: "red"
+            image: "/local/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.jpg"
+            actions:
+              - action: "URI"
+                title: "Apri live"
+                uri: "/schede-nascoste/cctv"
+              - action: "URI"
+                title: "Apri Registrazione"
+                uri: "/media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocale%2Fimmagini_allarme"
+      - service: *mobile2
+        data:
+          message: '{{ states[camera].name }}'
+          title: '---CCTV---'
+          data:
+            notification_icon: "mdi:cctv"
+            color: "red"
+            image: "/local/immagini_allarme/{{states[camera].object_id}}.jpg"
+            actions:
+              - action: "URI"
+                title: "Apri live"
+                uri: "/schede-nascoste/cctv"
+              - action: "URI"
+                title: "Apri Registrazione"
+                uri: "/media-browser/browser/app%2Cmedia-source%3A%2F%2Fmedia_source/%2Cmedia-source%3A%2F%2Fmedia_source%2Flocale%2Fimmagini_allarme"
+      - alias: Avvia registrazione camera
+        service: camera.record
+        data:
+          filename: "/config/www/immagini_allarme/{{states[camera].object_id}}/{{now().strftime('%d-%m-%Y--%H:%M')}}.mp4"
+          duration: 30
+        target:
+          entity_id: "{{camera}}"

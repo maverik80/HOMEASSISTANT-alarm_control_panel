@@ -1,0 +1,199 @@
+button_card_templates:
+  no_background:
+    styles:
+      card:
+        - background-color: rgba(0,0,0,0.0)
+        - border-width: 0px
+  display:
+    tap_action:
+      action: none
+    show_icon: false
+    show_state: true
+    show_label: true
+    styles:
+      label:
+        - color: '#5F5F5F'
+      state:
+        - font-weight: bold
+        - color: '#2F2F2F'
+      name:
+        - color: '#404040'
+        - font-weight: bold
+      grid:
+        - grid-template-areas: '".""s" "n""l"'
+        - grid-template-rows: 1fr 1fr 1fr 1fr
+      card:
+        - box-shadow: 'inset -2px -2px 3px #313131, inset 3px 3px 3px black'
+        - height: 80px
+        - background-color: |
+            [[[
+              if (states['alarm_control_panel.home_alarm'].state === 'disarmed') 
+              return "";
+              else 
+                return 'rgba(0,9,255,.8)';
+            ]]]  
+    style:
+      .: |
+        ha-card {
+          background: linear-gradient(23deg, #f8f8e7, rgba(255,0,0,0)  90.71%),
+          linear-gradient(207deg,  #f8f8e7, rgba(0,0,255,0) 50.71%);
+          margin: 0px 30px 0px 0px;
+              }
+  popup_setting_dx:
+    template: popup_setting_sx
+    styles:
+      grid:
+        - grid-template-areas: |
+            "  n   icona "  
+        - grid-template-columns: 1fr
+      card:
+        - border-radius: 12px
+        - border-bottom-left-radius: 20%
+        - border-bottom-right-radius: 0%
+        - border-left: 0px solid
+        - border-right: 1px solid
+  popup_setting_sx:
+    show_icon: false
+    styles:
+      grid:
+        - grid-template-columns: 0fr
+        - grid-column-gap: 0.1em
+        - grid-template-areas: |
+            " icona  n  "      
+      card:
+        - height: 55px
+        - border-bottom-right-radius: 20%
+        - border-bottom: 5px solid
+        - border-top: 0px solid
+        - border-left: 1px solid
+        - border-right: 0px solid
+        - border-color: var(--paper-slider-active-color)
+    state:
+      - value: 'off'
+        styles:
+          card:
+            - border-color: var(--paper-slider-container-color)
+          name:
+            - color: var(--paper-slider-active-color)
+    custom_fields:
+      icona:
+        card:
+          type: custom:button-card
+          entity: '[[[ return entity.entity_id ]]]'
+          show_name: false
+          icon: '[[[ return variables.icon || "mdi:home-assistant" ]]]'
+          size: 100%
+          styles:
+            card:
+              - height: 56px
+              - margin-top: '-10px'
+              - width: 40px
+              - background-color: GhostWhite
+              - border-top-left-radius: 0%
+              - border-bottom-left-radius: 0%
+              - border-bottom-right-radius: 0%
+              - border-top-right-radius: 0%
+            icon:
+              - color: var(--state-icon-color)
+          state:
+            - value: 'on'
+              styles:
+                icon:
+                  - color: var(--state-icon-active-color)
+            - value: 'off'
+              styles:
+                card:
+                  - background-color: var(--paper-slider-active-color)
+  impostazione_allarme:
+    template: pressione
+    lock:
+      enabled: |
+        [[[
+          if (states['alarm_control_panel.home_alarm'].state != 'disarmed' && 
+          states['input_number.control_code_alarm'].state != states['input_number.setting_code'].state) 
+          return 'on' ;          
+        ]]]
+      unlock: none
+    styles:
+      lock:
+        - top: '-31px'
+        - left: 2px
+        - padding: 26px
+        - color: '#8F8F8F'
+      card:
+        - height: 35px
+        - box-shadow: '-3px -3px 3px #373737, 3px 3px 3px black'
+        - width: 70px
+        - background-color: rgba(0,0,0,0.0)
+        - border-width: 0px
+      name:
+        - color: |
+            [[[
+              if (states['alarm_control_panel.home_alarm'].state != 'disarmed') {
+                return '#8F8F8F';
+              } else {
+                return '#404040';
+              }
+
+            ]]]
+        - font-size: 50%
+  action_type_alarm:
+    entity: alarm_control_panel.home_alarm
+    size: 40%
+    color: black
+    template: pressione
+    show_icon: false
+    state:
+      - value: armed_night
+        styles:
+          name:
+            - color: red
+    styles:
+      card:
+        - height: 30px
+        - box-shadow: '-3px -3px 3px #373737, 3px 3px 3px black'
+        - width: 48px
+      name:
+        - color: black
+        - font-size: 50%
+      lock:
+        - top: '-24px'
+        - left: 2px
+        - padding: 18px
+        - color: '#8F8F8F'
+    lock:
+      enabled: |
+        [[[
+          if (states['alarm_control_panel.home_alarm'].state != 'disarmed'){
+          return 'on' ;
+          }
+        ]]]
+      unlock: none
+    duration: |
+      [[[
+        if (states['alarm_control_panel.home_alarm'].state != 'disarmed'){
+        return 'on' ;
+        }
+      ]]]
+        
+  aciton_number:
+    tap_action:
+      action: call-service
+      service: script.control_code_alarm
+      service_data:
+        'n': '[[[ return variables.n  ]]]'
+  alarm_number:
+    color: black
+    template: pressione
+    styles:
+      card:
+        - height: 35px
+        - box-shadow: '-3px -3px 3px #373737, 3px 3px 3px black'
+        - width: 43px
+        - background-color: rgba(0,0,0,0.0)
+        - border-width: 0px
+  pressione:
+    styles:
+      card:
+        - '--mdc-ripple-color': '#4F4F4F'
+        - '--mdc-ripple-press-opacity': 0.2

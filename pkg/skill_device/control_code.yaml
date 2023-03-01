@@ -1,0 +1,132 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+        Allarme: &alarm alarm_control_panel.home_alarm
+
+# ATTENZIONE: file funzionante solo con la card
+# ATTENZIONE per utilizzare questo file il codice allarme ed il codice emergenza non può iniziare con zero
+# Il file esegue un controllo per inserimento codice disarmo. 
+# E' possibile scegliere i tentativi codice disarmo oltre il quale scatta l'allarme (input_number.alarm_code_attempts).
+# Se input_number.alarm_code_attempts impostato su 0 il controllo codice errati viene disattivato
+# E' possibile impostare un codice di 'emergenza' che permette di disattivare l'allarme inviando una notifica di allert
+# Con il codice 'input_number.setting_code' utilizzato da tastiera allarme è possibile cambiare le impostazioni dalla card con allarme inserito (toglie lock)
+# inserire il proprio codice allarme nel template button.confirmed_code_alarm
+#######################################################################################################################
+input_number:
+  control_code_alarm:
+    name: Codice allarme
+    mode: box
+    min: 0
+    initial: 0
+    max: 9999999999
+    step: 1
+  
+  alarm_code_attempts:
+    name: Tentativi codice allarme
+    icon: mdi:code-not-equal
+    mode: box
+    min: 0
+    max: 10
+    step: 1
+
+  emergency_code:
+    name: Codice di emergenza
+    mode: box
+    min: 1
+    max: 9999999999
+    step: 1
+    icon: mdi:send-lock
+
+  setting_code:
+    name: Codice per accedere ad impostazioni
+    mode: box
+    min: 1
+    max: 9999999999
+    step: 1
+    icon: mdi:send-lock
+
+template:
+  - trigger:
+      - platform: state
+        entity_id: *alarm
+        not_to: 
+          - 'triggered'
+          - 'pending'
+          - 'arming'
+      - platform: state
+        entity_id: button.confirmed_code_alarm
+    sensor:
+      - name: counter_code_error
+        state: >
+          {% if trigger.entity_id == 'button.confirmed_code_alarm' and not is_state('input_number.control_code_alarm','0.0')%}
+           {{ 1 if states('sensor.counter_code_error') | int(0) == 0 else states('sensor.counter_code_error') | int(0) + 1 }}
+          {% elif trigger.entity_id == 'button.confirmed_code_alarm' and is_state('input_number.control_code_alarm','0.0')%}
+           {{ states('sensor.counter_code_error') | int(0)  }}
+          {% else  %}
+            0
+          {% endif %}
+
+  - button:
+      - name: confirmed_code_alarm
+        press:
+          - choose: 
+              - alias: Disattiva allarme
+                conditions:                             # INSERIRE IL PROPRIO CODICE DELL'ALLARME
+                  - "{{states('input_number.control_code_alarm')|int(0) == xxxxxxxxxxx|int(0) }}"
+                sequence: 
+                  - service: alarm_control_panel.alarm_disarm
+                    target:
+                      entity_id: *alarm
+                    data:
+                      code: !secret alarm_code
+              - alias: Codice di emergenza per disattivare allarme ed inviare notifica di pericolo
+                conditions:
+                  - "{{states('input_number.control_code_alarm')|int(0) == states('input_number.emergency_code')|int(0) }}"
+                sequence: 
+                  - service: alarm_control_panel.alarm_disarm
+                    target:
+                      entity_id: *alarm
+                    data:
+                      code: !secret alarm_code
+                  - service: script.notify_allert
+                    data: 
+                      push_on: 'true'
+                      google_on: 'false'
+                      escludi_1: notify.mobile_app_samsung_s21
+                      alexa_on: 'false'
+                      voip: 'true'
+                      message: >
+                        {{ ("Attenzione è stato disattivato l'allarme con codice di emergenza alle ") + (now().strftime("%H:%M"))|string}}
+              - alias: Controlla tentativi codice errato 
+                conditions:
+                  -  "{{ (states('sensor.counter_code_error')|int(0) >= states('input_number.alarm_code_attempts')|int(0)) and not is_state('input_number.alarm_code_attempts','0.0')}} "
+                sequence:
+                  - service: alarm_control_panel.alarm_trigger
+                    target:
+                      entity_id: *alarm
+          - service: script.control_code_alarm
+
+script:
+  control_code_alarm:
+    alias: Inserisci codice allarme
+    mode: restart
+    variables:
+      n: 'canc'
+    sequence:
+      - service: input_number.set_value
+        data:
+          value: >
+            {% if  n != 'canc' %}
+              {{(states('input_number.control_code_alarm')|int(0))|string + n|string}}
+            {% else %}
+              0
+            {% endif %}
+        target:
+          entity_id: input_number.control_code_alarm
+      - delay:
+          minutes: 1
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: input_number.control_code_alarm

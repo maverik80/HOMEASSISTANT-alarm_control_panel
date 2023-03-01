@@ -1,0 +1,64 @@
+########################################################################################################################################
+# Creazione allarme
+alarm_control_panel:
+  - platform: manual
+    name: Home Alarm
+    arming_time: 50
+    delay_time: 50
+    trigger_time: 10
+    code: !secret alarm_code
+    code_arm_required: false
+
+########################################################################################################################################
+# Inserire nei gruppi le entity_id da aggiungere o rimuovere al pkg che non vengono viste in automatico 
+# ATTENZIONE PER QUANTO RIGUARDA I SENSORI BATTERY  "file: person": 
+#   - se non inseriti nei gruppi vengono presi tutti i sensori batteria dei device con app installata
+#   - se inseriti in include_alarm_entities il controllo stato batteria verrà effettuato solo su questi
+#   - se inseriri in exclude_alarm_entities il controllo stato batteria avviene su tutti i device con app installata esclusi quelli inseriti
+# PULSANTI FISICI "file: real_input_alarm": 
+#   - E' possibile solo escludere sensori 
+#   -  b che utilizzano "event: shelly.click" non possono essere ne esclusi ne inseriti perchè non esiste l'entità
+# SENSORI PER ALLARME file:"armed_away & armed_night":
+#   - Usare solo binary_sensor
+#   - E' possibile mettere binary in entrambi i gruppi quindi puoi sia aggiungere che toglie sensori dalla lista contemporaneamente
+# ALLARME SCATTATO: file: action_alarm: 
+#   - Se viene disattivato durante il pending(luci accese) vengono spente le luci con la possibilità di lasciare accese quelle inserite nel group.exclude_alarm_entities, solo se dopo tramonto
+# IL FILE jammer_detect è escluso da questo funzionamento... 
+group:  
+  exclude_alarm_entities:
+    name: Entità da escludere per pkg allarme
+    entities:
+      - binary_sensor.frigorifero_door_open
+      - binary_sensor.bedprecence_mattia
+      - sensor.miflora_signal_strength
+      - switch.luce_ingresso
+  include_alarm_entities: 
+    name: Entità da includere per pkg allarme 
+    entities:
+      - sensor.cellulare_marco_battery_level
+      - sensor.cellulare_serena_livello_della_batteria
+########################################################################################################################################
+input_boolean:
+  alarm_triggered_state:
+
+automation:
+- alias: Stato Trigger Allarme
+  id: state_trigger_alarm
+  initial_state: true
+  mode: single
+  trigger:
+  - entity_id: alarm_control_panel.home_alarm
+    platform: state
+    to: 
+      - 'triggered'
+      - 'disarmed'
+  action:
+  - if: "{{trigger.to_state.state == 'triggered'}}"
+    then:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.alarm_triggered_state
+    else:
+        - service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.alarm_triggered_state

@@ -1,0 +1,50 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+        Allarme: &alarm alarm_control_panel.home_alarm
+        Tag INTERNO: &tag_interno e356297b-f210-4766-xxxxxxxxxxxxxxxxx 
+        Tag ESTERNO: &tag_esterno a4bfdd27-d226-43b1-xxxxxxxxxxxxxxxxxxx 
+        Telefono Marco: &marco 3d0fa85xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Telefono Serena: &serena caf982xxxxxxxxxxxxxxxxxxxxx
+
+# ATTIVA E DISATTIVA ALLARME GLOBALE CON TAG NFC
+
+automation:        
+- alias: Tag NFC alarm
+  id: tag_nfc_alarm
+  trigger:
+  - platform: event
+    event_type: tag_scanned
+    event_data:
+      device_id:  *serena
+      tag_id: *tag_interno
+  - platform: event
+    event_type: tag_scanned
+    event_data:
+      device_id:  *marco
+      tag_id:  *tag_interno
+  - platform: event
+    event_type: tag_scanned
+    event_data:
+      device_id:  *serena
+      tag_id: *tag_esterno
+  - platform: event
+    event_type: tag_scanned
+    event_data:
+      device_id:  *marco
+      tag_id:  *tag_esterno
+  action:
+  - if:
+      - condition: state
+        entity_id: *alarm
+        state: disarmed
+    then:
+      - service: alarm_control_panel.alarm_arm_away
+        target:
+          entity_id: *alarm
+    else:
+      - service: alarm_control_panel.alarm_disarm
+        data:
+          code: !secret alarm_code
+        target:
+          entity_id: *alarm

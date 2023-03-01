@@ -1,0 +1,49 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+        Allarme: &alarm alarm_control_panel.home_alarm
+
+# Router utilizzato FritzBox!6890 con fallback lte (in modalità fallback non è possibile ricevere la chiamata.)
+# UPS utilizzato tecnoware 1100
+
+automation:
+- alias: Stato Internet
+  id: internet.state
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.fritz_box_6890_lte_connection
+  action:
+    - service: script.notify_system
+      data:
+        title: --CONNESSIONE--
+        message: >
+          {% if trigger.to_state.state == 'on'  %} 
+            {{('Connessione internet tornata a funzionare alle ')+(states[trigger.entity_id].last_changed+ timedelta(hours=1)).strftime("%H:%M")}}
+          {%else%} 
+            {{('Connessione Assente attivo fallback LTE dalle ')+(states[trigger.entity_id].last_changed+ timedelta(hours=1)).strftime("%H:%M")}}
+          {%endif%}
+
+- id: Avviso UPS Batteria
+  alias: Avviso UPS Batteria
+  trigger:
+  - platform: state
+    entity_id: sensor.tecnoware_load
+    to: 
+      - Online
+      - On Battery
+  condition:
+    - not: 
+      - condition: state
+        entity_id: *alarm
+        state: disarmed
+  action:
+    - service: script.notify_system
+      data:
+        voip: 'true'
+        title: --UPS--
+        message: >
+          {% if trigger.entity_id == 'On Battery'%} 
+            {{('ATTENZIONE: Assenza di tensione elettrica in casa dalle ')+(states[trigger.entity_id].last_changed+ timedelta(hours=1)).strftime("%H:%M")}} 
+          {%else%} 
+            {{('Fornitura elettrica ristabilita, con allarme inserito alle ')+(states[trigger.entity_id].last_changed+ timedelta(hours=1)).strftime("%H:%M")}}
+          {%endif%}"
