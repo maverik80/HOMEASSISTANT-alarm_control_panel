@@ -1,26 +1,3 @@
-# testato su:  
-  # shelly 2.5  cover / light / switch
-  # shelly 1 switch / light
-  # shelly 1 PM switch / light
-  # shelly Shelly RGBW color/white
-  
-  # shelly2 cover / light / switch  
-  # Shelly UNI 
-  # shelly4prp 
-  # shelly 1l 
-
-  # Shelly Dimmer 
-  # Shelly Dimmer 2
-  # Shelly Plus 1pm 
-  # Shelly Plus 1 
-  # Shelly Plus 2 PM 
-  # Shelly Pro 1 
-  # Shelly Pro 1 PM 
-  # Shelly Pro 2 PM 
-  # Shelly Pro 3 
-  # Shelly Pro 2 
-  # Shelly Pro 4 PM 
-
 rest_command:
   detached_shelly:
     url: "{{ urls|default(none) }}"
