@@ -69,7 +69,6 @@ PS:non sono riuscito su android ad avere l'anteprima del video registrato perch√
 	- Quando inseriamo un codice sul "tastierino" e non si effettua la conferma o non viene cancellato, dopo un minuto torna allo stato inserire codice.
 
 - Con il codice 'input_number.setting_code' utilizzato dal tastierino √® possibile cambiare le impostazioni dalla card con allarme inserito (toglie lock)
-- inserire il proprio codice allarme nel template button.confirmed_code_alarm
 
 #### DETECT_JAMMER:
 Il controllo jummer avviene in due modi: tramite i device che passano allo stato offline, tramite la differenza della media db misura
