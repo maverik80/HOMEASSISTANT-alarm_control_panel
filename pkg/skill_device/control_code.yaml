@@ -10,7 +10,6 @@ homeassistant:
 # Se input_number.alarm_code_attempts impostato su 0 il controllo codice errati viene disattivato
 # E' possibile impostare un codice di 'emergenza' che permette di disattivare l'allarme inviando una notifica di allert
 # Con il codice 'input_number.setting_code' utilizzato da tastiera allarme è possibile cambiare le impostazioni dalla card con allarme inserito (toglie lock)
-# inserire il proprio codice allarme nel template button.confirmed_code_alarm
 #######################################################################################################################
 input_number:
   control_code_alarm:
@@ -69,10 +68,12 @@ template:
   - button:
       - name: confirmed_code_alarm
         press:
+          - variables:
+              code: !secret alarm_code
           - choose: 
               - alias: Disattiva allarme
-                conditions:                             # INSERIRE IL PROPRIO CODICE DELL'ALLARME
-                  - "{{states('input_number.control_code_alarm')|int(0) == xxxxxxxxxxx|int(0) }}"
+                conditions:
+                  - "{{states('input_number.control_code_alarm')|int(0) == code|int(0) }}"
                 sequence: 
                   - service: alarm_control_panel.alarm_disarm
                     target:
