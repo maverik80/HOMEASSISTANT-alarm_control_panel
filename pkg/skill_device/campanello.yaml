@@ -4,8 +4,7 @@ homeassistant:
         Allarme: &alarm alarm_control_panel.home_alarm
         Campanello: &doorbell switch.campanello
 
-# SE SCATTA ALLARME FAI SUONARE IL CAMPANELLO AD INTERMITTENZA (1sec X 30 tot 60sec)
-# FAI SMETTERE DI SUONARE IL CAMPANELLO SE ALLARME VIENE DISATTIVATO (non ho ancora la sirena)
+# SE SCATTA ALLARME FAI SUONARE IL CAMPANELLO AD INTERMITTENZA
 automation:
 - alias: Campanello come allarme
   id: bell_for_alarm
@@ -22,18 +21,17 @@ automation:
         - "{{trigger.to_state.state == 'triggered'}}"
     then:
         - repeat:
-            count: '30'
+            count: '60'
             sequence:
-            - service: switch.turn_on
+            - service: switch.toggle
               target:
                 entity_id: *doorbell
             - delay:
                 seconds: 1
-            - service: switch.turn_off
-              target:
-                entity_id: *doorbell
-            - delay:
-                seconds: 1
+        - service: switch.turn_off
+          target:
+            entity_id: *doorbell
+
     else:
         - service: switch.turn_off
           target:
