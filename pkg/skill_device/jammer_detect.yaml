@@ -62,19 +62,30 @@ template:
               {%endfor%}
             {{(device.entities|sum/device.entities|count)|round(2) if device.entities|sum !=0 and device.entities|count !=0 else 0 }}
           offline: "{{expand('group.jammer_detect_device')| selectattr('state', 'in', ['unknown','unavailable'])|list|count}}"
+
+  - trigger:
+      - platform: state
+        entity_id: group.jammer_detect_device
+        attribute: entity_id
+        for: 
+          seconds: 5
+    sensor:
+      - name: Lista sensori jummer
+        state: "{{expand('group.jammer_detect_device')|count}}"
+        attributes:
+          print_list_group: "{{(expand('group.jammer_detect_device')|map(attribute='entity_id')|list)|default(none)}}"
+
   - trigger:
       - platform: state
         entity_id: sensor.jammer_detect_count_entities
-        for: "00:00:02"  #ritardo per evitare errore creazione gruppo al riavvio ed al reload
         to: null
       - platform: state
         entity_id: sensor.jammer_detect_count_entities
         attribute: offline
         to: null
-        for: "00:00:02" #ritardo per evitare errore creazione gruppo al riavvio ed al reload
     sensor:
       - name: "Print list entities"
-        state:  "{{expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='entity_id')|list}}"
+        state:  "{{expand('group.jammer_detect_device')|count}}"
         attributes:
           print_average_db_global: >
             {% set sum_state = expand('group.jammer_detect_device')|rejectattr('state', 'in', ['unavailable','unknown'])|map(attribute='state')|map('float')|sum %}
@@ -98,6 +109,7 @@ template:
                 {%- endif -%}
               {%endfor%}
             {{(device.entities|sum/device.entities|count)|round(2) if device.entities|sum !=0 and device.entities|count !=0 else 0 }}
+
   - select:
       - name: "Jammer detect entities"
         state: "Disabilitato"
@@ -134,7 +146,7 @@ automation:
     trigger:
     - platform: template
       value_template: "{{is_state('input_select.device_db','Tutte') and (state_attr('sensor.jammer_detect_count_entities','instant_average_db_global')|int(0)<(state_attr('sensor.print_list_entities','print_average_db_global')|int(0)-states('input_number.jammer_detect_difference_db_limit')|int(0)))}}"
-      for: '00:00:03'  #ritardo per valorizzare correttamento sensor.jammer_detect_count_entities
+      for: '00:00:03'
     - platform: template
       value_template: "{{is_state('input_select.device_db','EspHome') and (state_attr('sensor.jammer_detect_count_entities','instant_average_db_esphome')|int(0)<(state_attr('sensor.print_list_entities','print_average_db_esphome')|int(0)-states('input_number.jammer_detect_difference_db_limit')|int(0)))}}"
       for: '00:00:03'
@@ -190,8 +202,8 @@ automation:
       - platform: homeassistant
         event: start
     action:
-      - delay: '00:00:01'
+      - delay: '00:00:10'
       - service: group.set
         data:
           object_id: jammer_detect_device
-          entities: "{{states('sensor.print_list_entities')}}"
+          entities: "{{state_attr('sensor.lista_sensori_jummer','print_list_group')}}"
