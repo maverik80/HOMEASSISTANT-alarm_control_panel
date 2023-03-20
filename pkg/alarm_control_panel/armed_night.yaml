@@ -16,7 +16,7 @@ template:
         entity_id: group.list_sensor_alarm_night
         attribute: entity_id
         for: 
-          seconds: 2
+          seconds: 5
     sensor:
       - name: Lista sensori allarme notte
         state: "{{(expand('group.list_sensor_alarm_night')|selectattr('state','eq','off')|list)|count}}"
@@ -215,7 +215,7 @@ automation:
   action:
     - if: "{{ trigger.id != 'active' }}"
       then: 
-      - delay: '00:00:01'
+      - delay: '00:00:10'
       - service: group.set
         data:
           object_id: list_sensor_alarm_night
