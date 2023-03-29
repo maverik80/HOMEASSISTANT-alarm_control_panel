@@ -17,14 +17,14 @@ button_card_templates:
         - font-weight: bold
         - color: '#2F2F2F'
       name:
-        - color: '#404040'
+        - color: '#2F2F2F'
         - font-weight: bold
       grid:
         - grid-template-areas: '".""s" "n""l"'
         - grid-template-rows: 1fr 1fr 1fr 1fr
       card:
         - box-shadow: 'inset -2px -2px 3px #313131, inset 3px 3px 3px black'
-        - height: 80px
+        - height: 90px
         - background-color: |
             [[[
               if (states['alarm_control_panel.home_alarm'].state === 'disarmed') 
@@ -121,9 +121,9 @@ button_card_templates:
         - padding: 26px
         - color: '#8F8F8F'
       card:
-        - height: 35px
+        - height: 40px
         - box-shadow: '-3px -3px 3px #373737, 3px 3px 3px black'
-        - width: 70px
+        - width: 65px
         - background-color: rgba(0,0,0,0.0)
         - border-width: 0px
       name:
@@ -150,12 +150,12 @@ button_card_templates:
             - color: red
     styles:
       card:
-        - height: 30px
+        - height: 35px
         - box-shadow: '-3px -3px 3px #373737, 3px 3px 3px black'
-        - width: 48px
+        - width: 55px
       name:
         - color: black
-        - font-size: 50%
+        - font-size: 60%
       lock:
         - top: '-24px'
         - left: 2px
@@ -187,9 +187,9 @@ button_card_templates:
     template: pressione
     styles:
       card:
-        - height: 35px
+        - height: 45px
         - box-shadow: '-3px -3px 3px #373737, 3px 3px 3px black'
-        - width: 43px
+        - width: 58px
         - background-color: rgba(0,0,0,0.0)
         - border-width: 0px
   pressione:
